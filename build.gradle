@@ -1,7 +1,12 @@
+plugins {
+    id "net.ltgt.apt" version "0.13"
+}
+
 group 'org.trellisldp'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java-library'
+apply plugin: 'net.ltgt.apt-idea'
 
 sourceCompatibility = 1.8
 
@@ -43,7 +48,8 @@ dependencies {
     api 'com.google.cloud:google-cloud-pubsub:0.30.0-beta'
 
     implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
-
+    testImplementation group: 'com.google.auto.value', name: 'auto-value', version: '1.5.2'
+    testApt group: 'com.google.auto.value', name: 'auto-value', version: '1.5.2'
     testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
     testImplementation group: 'org.apache.commons', name: 'commons-rdf-simple', version: commonsRdfVersion
     testImplementation group: 'org.apiguardian', name: 'apiguardian-api', version: apiguardianVersion

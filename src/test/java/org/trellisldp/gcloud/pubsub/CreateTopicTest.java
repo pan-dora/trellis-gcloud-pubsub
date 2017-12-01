@@ -1,3 +1,5 @@
+package org.trellisldp.gcloud.pubsub;
+
 import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
@@ -17,6 +19,7 @@ public class CreateTopicTest {
     private static TopicAdminClient topicAdminClient;
     private static SubscriptionAdminClient subscriptionAdminClient;
     private static String projectId;
+    private String credentialsFile = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
 
     @BeforeClass
     public static void setupClass() throws Exception {
@@ -31,9 +34,7 @@ public class CreateTopicTest {
 
     @Test
     public void createTopicTest() throws Exception {
-        Credentials credentials = ServiceAccountCredentials.fromStream(new FileInputStream(
-                "/home/christopher/IdeaProjects/trellis-deployment/trellis-gcloud/app-credentials"
-                        + "/trellisldp-b4f1e6de80c1.json"));
+        Credentials credentials = ServiceAccountCredentials.fromStream(new FileInputStream(credentialsFile));
         TopicAdminSettings topicAdminSettings =
                 TopicAdminSettings.newBuilder()
                         .setCredentialsProvider(FixedCredentialsProvider.create(credentials))

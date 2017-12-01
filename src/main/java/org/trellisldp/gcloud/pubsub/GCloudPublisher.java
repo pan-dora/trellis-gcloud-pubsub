@@ -49,19 +49,9 @@ public class GCloudPublisher implements EventService {
 
         service.serialize(event).ifPresent(message -> {
             LOGGER.debug("Sending message to Google Cloud PubSub topic: {}", topicName);
-            try {
                 PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(
                         ByteString.copyFromUtf8(message)).build();
                 ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
-            } finally {
-                if (publisher != null) {
-                    try {
-                        publisher.shutdown();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
         });
     }
 }
