@@ -1,0 +1,58 @@
+group 'org.trellisldp'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'java-library'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    moduleName = "org.trellisldp.kafka"
+    vendor = 'Trellis LDP'
+    homepage = 'http://www.trellisldp.org'
+    docURL = 'http://www.trellisldp.org/apidocs'
+    license = 'Apache 2'
+
+    /* Dependencies */
+    trellisApiVersion = '0.3.0'
+    kafkaVersion = '0.11.0.1_1'
+    slf4jVersion = '1.7.25'
+
+    /* Testing */
+    junitVersion = '5.0.2'
+    junitPlatformVersion = '1.0.2'
+    apiguardianVersion = '1.0.0'
+    mockitoVersion = '2.12.0'
+    commonsRdfVersion = '0.3.0-incubating'
+    logbackVersion = '1.2.3'
+    jacocoVersion = "0.7.9"
+    trellisEventVersion = "0.1.0"
+
+    /* OSGi */
+    trellisApiVersionRange = '[0.3,1)'
+    spiflyVersion = '1.0.8'
+    projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
+}
+
+dependencies {
+    api group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
+    api group: 'com.google.api-client', name: 'google-api-client', version: '1.23.0'
+    api 'com.google.cloud:google-cloud-pubsub:0.30.0-beta'
+
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
+    testImplementation group: 'org.apache.commons', name: 'commons-rdf-simple', version: commonsRdfVersion
+    testImplementation group: 'org.apiguardian', name: 'apiguardian-api', version: apiguardianVersion
+    testImplementation group: 'org.junit.platform', name: 'junit-platform-runner', version: junitPlatformVersion
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitVersion
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: mockitoVersion
+    testImplementation group: 'org.trellisldp', name: 'trellis-event-serialization', version: trellisEventVersion
+    testImplementation group: 'com.google.api-client', name: 'google-api-client', version: '1.23.0'
+    testImplementation 'com.google.cloud:google-cloud-pubsub:0.30.0-beta'
+    testImplementation group: 'com.google.guava', name: 'guava', version: '23.5-jre'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+}
