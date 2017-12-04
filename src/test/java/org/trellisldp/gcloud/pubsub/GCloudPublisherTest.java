@@ -28,7 +28,6 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.auto.value.AutoValue;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
-import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
@@ -64,14 +63,14 @@ import org.trellisldp.vocabulary.Trellis;
  */
 @RunWith(JUnitPlatform.class)
 public class GCloudPublisherTest {
-    private String credentialsFile = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
     private static final String NAME_SUFFIX = UUID.randomUUID().toString();
     private static final RDF rdf = new SimpleRDF();
     private static String projectId;
-    private final String topic = formatForTest("topic-test");
-    private final String subscription = formatForTest("subscription-test");
     private static TopicAdminClient topicAdminClient;
     private static SubscriptionAdminClient subscriptionAdminClient;
+    private final String topic = formatForTest("topic-test");
+    private final String subscription = formatForTest("subscription-test");
+    private String credentialsFile = System.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 
     @Mock
     private Event mockEvent;
@@ -83,7 +82,8 @@ public class GCloudPublisherTest {
     void setUp() {
         initMocks(this);
         when(mockEvent.getTarget()).thenReturn(of(rdf.createIRI("trellis:repository/resource")));
-        when(mockEventNack.getTarget()).thenReturn(of(rdf.createIRI("trellis:repository/resource2")));
+        when(mockEventNack.getTarget()).thenReturn(
+                of(rdf.createIRI("trellis:repository/resource2")));
         when(mockEvent.getAgents()).thenReturn(singleton(Trellis.RepositoryAdministrator));
         when(mockEventNack.getAgents()).thenReturn(singleton(Trellis.RepositoryAdministrator));
         when(mockEvent.getIdentifier()).thenReturn(rdf.createIRI("urn:test"));
@@ -136,27 +136,6 @@ public class GCloudPublisherTest {
         subscriptionAdminClient.createSubscription(
                 subscriptionName, topicName, PushConfig.newBuilder().build(), 10);
 
-        final BlockingQueue<Object> receiveQueue = new LinkedBlockingQueue<>();
-        Subscriber subscriber =
-                Subscriber.newBuilder(
-                        subscriptionName,
-                        new MessageReceiver() {
-                            @Override
-                            public void receiveMessage(
-                                    final PubsubMessage message, final AckReplyConsumer consumer) {
-                                receiveQueue.offer(MessageAndConsumer.create(message, consumer));
-                            }
-                        })
-                        .build();
-        subscriber.addListener(
-                new Subscriber.Listener() {
-                    public void failed(Subscriber.State from, Throwable failure) {
-                        receiveQueue.offer(failure);
-                    }
-                },
-                MoreExecutors.directExecutor());
-        subscriber.startAsync();
-
         Publisher publisher = Publisher.newBuilder(topicName).build();
         final EventService svc = new GCloudPublisher(publisher, topic);
         svc.emit(mockEvent);
@@ -167,47 +146,36 @@ public class GCloudPublisherTest {
             e.printStackTrace();
         }
 
-        MessageAndConsumer toAck = pollQueue(receiveQueue);
-        toAck.consumer().ack();
+        final BlockingQueue<Object> receiveQueue = new LinkedBlockingQueue<>();
+        Subscriber subscriber =
+                Subscriber.newBuilder(
+                        subscriptionName,
+                        (message, consumer) -> receiveQueue.offer(MessageAndConsumer.create(message, consumer)))
+                        .build();
+        subscriber.addListener(
+                new Subscriber.Listener() {
+                    public void failed(Subscriber.State from, Throwable failure) {
+                        receiveQueue.offer(failure);
+                    }
+                },
+                MoreExecutors.directExecutor());
+        subscriber.startAsync();
 
-        MessageAndConsumer toNack = pollQueue(receiveQueue);
-        assertNotEquals(toNack.message().getData(), toAck.message().getData());
-        toNack.consumer().nack();
+        MessageAndConsumer event1 = pollQueue(receiveQueue);
+        event1.consumer().ack();
 
-        MessageAndConsumer redelivered = pollQueue(receiveQueue);
-        assertEquals(redelivered.message().getData(), toNack.message().getData());
-        redelivered.consumer().ack();
+        MessageAndConsumer event2 = pollQueue(receiveQueue);
+        assertNotEquals(event2.message().getData(), event1.message().getData());
+        event2.consumer().nack();
+        System.out.println(receiveQueue.size());
+
+        MessageAndConsumer event3 = pollQueue(receiveQueue);
+        assertEquals(event3.message().getData(), event2.message().getData());
+        event3.consumer().ack();
 
         subscriber.stopAsync().awaitTerminated();
         subscriptionAdminClient.deleteSubscription(subscriptionName);
         topicAdminClient.deleteTopic(topicName);
-    }
-
-    @AutoValue
-    abstract static class MessageAndConsumer {
-        abstract PubsubMessage message();
-
-        abstract AckReplyConsumer consumer();
-
-        public static MessageAndConsumer create(PubsubMessage message, AckReplyConsumer consumer) {
-            return builder()
-                    .message(message)
-                    .consumer(consumer)
-                    .build();
-        }
-
-        public static Builder builder() {
-            return new org.trellisldp.gcloud.pubsub.AutoValue_GCloudPublisherTest_MessageAndConsumer.Builder();
-        }
-
-        @AutoValue.Builder
-        public abstract static class Builder {
-            public abstract Builder message(PubsubMessage message);
-
-            public abstract Builder consumer(AckReplyConsumer consumer);
-
-            public abstract MessageAndConsumer build();
-        }
     }
 
     private MessageAndConsumer pollQueue(BlockingQueue<Object> queue) throws InterruptedException {
@@ -223,6 +191,17 @@ public class GCloudPublisherTest {
         }
         throw new IllegalStateException(
                 "expected either MessageAndConsumer or Throwable, found: " + obj);
+    }
+
+    @AutoValue
+    abstract static class MessageAndConsumer {
+        static MessageAndConsumer create(PubsubMessage message, AckReplyConsumer consumer) {
+            return new AutoValue_GCloudPublisherTest_MessageAndConsumer(message, consumer);
+        }
+
+        abstract PubsubMessage message();
+
+        abstract AckReplyConsumer consumer();
     }
 }
 

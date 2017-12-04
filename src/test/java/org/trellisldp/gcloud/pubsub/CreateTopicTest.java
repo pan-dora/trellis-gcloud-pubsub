@@ -4,7 +4,6 @@ import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.ServiceOptions;
-import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminSettings;
@@ -19,7 +18,7 @@ public class CreateTopicTest {
     private static TopicAdminClient topicAdminClient;
     private static SubscriptionAdminClient subscriptionAdminClient;
     private static String projectId;
-    private String credentialsFile = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+    private String credentialsFile = System.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 
     @BeforeClass
     public static void setupClass() throws Exception {
@@ -34,7 +33,8 @@ public class CreateTopicTest {
 
     @Test
     public void createTopicTest() throws Exception {
-        Credentials credentials = ServiceAccountCredentials.fromStream(new FileInputStream(credentialsFile));
+        Credentials credentials = ServiceAccountCredentials.fromStream(
+                new FileInputStream(credentialsFile));
         TopicAdminSettings topicAdminSettings =
                 TopicAdminSettings.newBuilder()
                         .setCredentialsProvider(FixedCredentialsProvider.create(credentials))

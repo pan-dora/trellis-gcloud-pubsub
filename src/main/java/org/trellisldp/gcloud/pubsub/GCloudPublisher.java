@@ -8,6 +8,7 @@ import com.google.cloud.pubsub.v1.Publisher;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.util.ServiceLoader;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.trellisldp.api.ActivityStreamService;
 import org.trellisldp.api.Event;
@@ -49,9 +50,14 @@ public class GCloudPublisher implements EventService {
 
         service.serialize(event).ifPresent(message -> {
             LOGGER.debug("Sending message to Google Cloud PubSub topic: {}", topicName);
-                PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(
-                        ByteString.copyFromUtf8(message)).build();
-                ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
+            PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(
+                    ByteString.copyFromUtf8(message)).build();
+            ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
+            try {
+                messageIdFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         });
     }
 }

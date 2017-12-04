@@ -4,7 +4,7 @@ An implementation of Trellis EventService that publishes events to Google Cloud 
 
 ## Configuration
 
-Set environment variable `GOOGLE_APPLICATION_CREDENTIALS` to the path of the PubSub service
+Set property `GOOGLE_APPLICATION_CREDENTIALS` in `gradle.properties` to the path of the PubSub service
 admin credential file.
 
 See https://developers.google.com/identity/protocols/application-default-credentials for details.
